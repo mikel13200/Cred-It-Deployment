@@ -417,24 +417,28 @@ class CurriculumService:
         passed_subjects: List[Dict[str, str]]
     ) -> Dict[str, int]:
         """
-        Update TOR results by deleting failed subjects and updating passed ones.
+        Update TOR results by marking failed subjects as DENIED and updating passed ones.
         
         Args:
             account_id: Student account ID
-            failed_subjects: List of subject codes to delete
+            failed_subjects: List of subject codes that failed
             passed_subjects: List of dicts with subject_code and remarks
             
         Returns:
-            Dictionary with counts of deleted and updated entries
+            Dictionary with counts of failed and updated entries
         """
         if not account_id:
             raise ValidationException("Account ID is required")
         
-        # Delete failed subjects
-        deleted_count, _ = CompareResultTOR.objects.filter(
+        # Mark failed subjects as DENIED instead of deleting them
+        failed_count = CompareResultTOR.objects.filter(
             account_id=account_id,
             subject_code__in=failed_subjects
-        ).delete()
+        ).update(
+            remarks="FAILED",
+            credit_evaluation=CompareResultTOR.CreditEvaluation.DENIED,
+            updated_at=models.F('updated_at')
+        )
         
         # Update passed subjects
         updated_count = 0
@@ -450,11 +454,11 @@ class CurriculumService:
         
         logger.info(
             f"Updated TOR results for {account_id}: "
-            f"{deleted_count} deleted, {updated_count} updated"
+            f"{failed_count} marked as failed, {updated_count} updated"
         )
         
         return {
-            "deleted": deleted_count,
+            "failed": failed_count,
             "updated": updated_count
         }
     
