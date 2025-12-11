@@ -55,95 +55,109 @@ export default function ExtractedPanel({ data, accountId, isOpen, onClose }) {
   };
 
   const handleConfirmContinue = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
+  if (isProcessing) return;
+  setIsProcessing(true);
 
-    try {
-      // Copy TOR entries
-      const copyResult = await torApi.copyTor(accountId);
-      console.log('copyTor returned:', copyResult);
+  try {
+    // Copy TOR entries
+    const copyResult = await torApi.copyTor(accountId);
+    console.log('copyTor returned:', copyResult);
 
-      // Check if we have valid response
-      if (!copyResult || !copyResult.data) {
-        console.error('Invalid response - copyResult:', copyResult);
-        throw new Error('Invalid response from server. Please try again.');
-      }
-
-      // Handle case where data is {count: 0} instead of array
-      let torEntries = [];
-      if (Array.isArray(copyResult.data)) {
-        torEntries = copyResult.data;
-      } else if (copyResult.data.count === 0) {
-        // No entries to process
-        showError('No TOR entries found to process. Please upload your transcript first.');
-        setShowConfirmPanel(false);
-        setIsProcessing(false);
-        return;
-      } else {
-        console.error('Unexpected data format:', copyResult.data);
-        throw new Error('Unexpected data format from server.');
-      }
-
-      if (torEntries.length === 0) {
-        showError('No TOR entries found to process.');
-        setShowConfirmPanel(false);
-        setIsProcessing(false);
-        return;
-      }
-
-      // Process remarks
-      const processedData = torEntries.map((row) => {
-        const units = parseFloat(row.total_academic_units);
-        let remarks = 'Failed / Invalid Units';
-        if (units && !isNaN(units) && units > 0 && units <= 15) {
-          remarks = 'Passed';
-        }
-        return { ...row, remarks };
-      });
-
-      const passedEntries = processedData.filter((r) => r.remarks === 'Passed');
-      const failedEntries = processedData.filter(
-        (r) => r.remarks === 'Failed / Invalid Units'
-      );
-
-      // Update backend
-      await torApi.updateTorResults(
-        accountId,
-        failedEntries.map((e) => e.subject_code),
-        passedEntries.map((e) => ({
-          subject_code: e.subject_code,
-          remarks: e.remarks,
-        }))
-      );
-
-      setShowConfirmPanel(false);
-      setShowSyncCompleted(true);
-      showSuccess('Result processed successfully! Click "Completed" to finalize.');
-    } catch (err) {
-      console.error('Error processing TOR:', err);
-      showError(err.message || 'Error occurred while processing results.');
-    } finally {
-      setIsProcessing(false);
+    if (!copyResult || !copyResult.data) {
+      console.error('Invalid response - copyResult:', copyResult);
+      throw new Error('Invalid response from server. Please try again.');
     }
-  };
+
+    // 🔥 Extract the actual backend payload
+    const payload = copyResult.data;       // axios wrapper
+    const serverData = payload.data;       // backend "data: [...]"
+
+    let torEntries = [];
+
+    if (Array.isArray(serverData)) {
+      torEntries = serverData;
+    } else if (serverData && serverData.count === 0) {
+      showError('No TOR entries found to process. Please upload your transcript first.');
+      setShowConfirmPanel(false);
+      setIsProcessing(false);
+      return;
+    } else {
+      console.error('Unexpected data format:', serverData);
+      throw new Error('Unexpected data format from server.');
+    }
+
+    if (torEntries.length === 0) {
+      showError('No TOR entries found to process.');
+      setShowConfirmPanel(false);
+      setIsProcessing(false);
+      return;
+    }
+
+    // Process remarks
+    const processedData = torEntries.map((row) => {
+      const units = parseFloat(row.total_academic_units);
+      let remarks = 'Failed / Invalid Units';
+      if (units && !isNaN(units) && units > 0 && units <= 15) {
+        remarks = 'Passed';
+      }
+      return { ...row, remarks };
+    });
+
+    const passedEntries = processedData.filter(
+      (r) => r.remarks === 'Passed'
+    );
+    const failedEntries = processedData.filter(
+      (r) => r.remarks === 'Failed / Invalid Units'
+    );
+
+    // Update backend
+    await torApi.updateTorResults(
+      accountId,
+      failedEntries.map((e) => e.subject_code),
+      passedEntries.map((e) => ({
+        subject_code: e.subject_code,
+        remarks: e.remarks,
+      }))
+    );
+
+    setShowConfirmPanel(false);
+    setShowSyncCompleted(true);
+    showSuccess('Result processed successfully! Click "Completed" to finalize.');
+  } catch (err) {
+    console.error('Error processing TOR:', err);
+    showError(err.message || 'Error occurred while processing results.');
+  } finally {
+    setIsProcessing(false);
+  }
+};
+
 
   const handleCompleted = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
+  if (isProcessing) return;
+  setIsProcessing(true);
 
-    try {
-      const result = await torApi.syncCompleted(accountId);
-      setSummaryData(result.data);
-      setShowSyncCompleted(false);
-      setShowSummary(true);
-      showSuccess('Sync completed successfully! Summary is now available.');
-    } catch (err) {
-      console.error(err);
-      showError('Error occurred while completing sync.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  try {
+    const result = await torApi.syncCompleted(accountId);
+
+    console.log("SYNC COMPLETED RAW RESPONSE:", result);
+
+    // FIX: Backend returned an array directly
+    const summary = Array.isArray(result) ? result : [];
+
+    console.log("SUMMARY ARRAY:", summary);
+
+    setSummaryData(summary);
+    setShowSyncCompleted(false);
+    setShowSummary(true);
+
+    showSuccess("Sync completed successfully! Summary is now available.");
+  } catch (err) {
+    console.error(err);
+    showError("Error occurred while completing sync.");
+  } finally {
+    setIsProcessing(false);
+  }
+};
 
   return (
     <>

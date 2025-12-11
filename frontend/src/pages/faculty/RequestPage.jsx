@@ -29,13 +29,24 @@ export default function RequestPage() {
       ]);
 
       // Extract data from API responses
-      const profiles = Array.isArray(profileData) ? profileData : (profileData?.data || []);
+      // Profile data might be a single object or an array (legacy)
+      let profileObj = null;
+      if (Array.isArray(profileData)) {
+        profileObj = profileData.length > 0 ? profileData[0] : null;
+      } else if (profileData && typeof profileData === 'object') {
+        // If it has a 'data' property that is an array, extract from there
+        if (Array.isArray(profileData.data)) {
+          profileObj = profileData.data.length > 0 ? profileData.data[0] : null;
+        } else if (profileData.user_id || profileData.name) {
+          // It's likely the profile object itself
+          profileObj = profileData;
+        }
+      }
+
       const citTorList = Array.isArray(citTorData) ? citTorData : (citTorData?.data || []);
       const applicantTorList = Array.isArray(applicantTorData) ? applicantTorData : (applicantTorData?.data || []);
 
-      if (profiles.length > 0) {
-        setProfile(profiles[0]);
-      }
+      setProfile(profileObj);
       setCitTor(citTorList);
       setApplicantTor(applicantTorList);
     } catch (error) {

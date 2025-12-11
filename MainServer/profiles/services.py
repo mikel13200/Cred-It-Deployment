@@ -56,6 +56,16 @@ class ProfileService:
         if not user_id:
             raise ValidationException("user_id is required")
         
+        # --- NORMALIZER FUNCTION (THIS FIXES YOUR VALIDATION FAILED) ---
+        def _normalize(value):
+            if value is None:
+                return None
+            if isinstance(value, str) and value.strip() == "":
+                return None
+            return value
+        # ----------------------------------------------------------------
+
+
         # Check if profile already exists
         if Profile.objects.filter(user_id=user_id).exists():
             raise DuplicateResourceException("Profile", user_id)

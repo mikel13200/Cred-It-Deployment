@@ -25,13 +25,21 @@ export default function FinalDocumentPage() {
       ]);
 
       // Extract data from API responses (handle both array and {data: array} formats)
-      const profiles = Array.isArray(profileData) ? profileData : (profileData?.data || []);
+      let profileObj = null;
+      if (Array.isArray(profileData)) {
+        profileObj = profileData.length > 0 ? profileData[0] : null;
+      } else if (profileData && typeof profileData === 'object') {
+        if (Array.isArray(profileData.data)) {
+          profileObj = profileData.data.length > 0 ? profileData.data[0] : null;
+        } else if (profileData.user_id || profileData.name) {
+          profileObj = profileData;
+        }
+      }
+
       const citTorList = Array.isArray(citTorData) ? citTorData : (citTorData?.data || []);
       const applicantTorList = Array.isArray(applicantTorData) ? applicantTorData : (applicantTorData?.data || []);
 
-      if (profiles.length > 0) {
-        setProfile(profiles[0]);
-      }
+      setProfile(profileObj);
       setCitTor(citTorList);
       setApplicantTor(applicantTorList);
     } catch (error) {

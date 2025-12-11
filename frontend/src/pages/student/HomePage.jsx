@@ -36,6 +36,11 @@ export default function HomePage() {
 
   const { uploadOcr, loading, ocrResults } = useTorUpload();
 
+  // ✅ Added missing showError function
+  const showError = (message) => {
+    alert(message);
+  };
+
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
 
   const handleContinue = (images) => {
@@ -62,28 +67,21 @@ export default function HomePage() {
     setShowProcessingModal(true);
 
     try {
-      // Process OCR
-      console.log('Starting OCR processing...');
       const result = await uploadOcr(uploadedImages, userName);
-      console.log('OCR Result:', result);
 
-      // Hide processing modal
       setShowProcessingModal(false);
 
-      // Open results if successful
-      if (result && result.data) {
-        console.log('Opening results modal with data:', result.data);
-        // Small delay to ensure modal transitions smoothly
+      // Validate response
+      if (result && result.ocr_results && result.school_tor) {
         setTimeout(() => {
           resultsModal.open();
         }, 100);
       } else {
-        console.log('No result from OCR');
+        showError('Invalid OCR response format');
       }
     } catch (error) {
-      console.error('OCR Processing Error:', error);
       setShowProcessingModal(false);
-      // You might want to show an error notification here
+      showError(error.message || 'OCR processing failed');
     }
   };
 
@@ -144,27 +142,24 @@ export default function HomePage() {
           )}
 
           <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 sm:py-12">
-            {/* Welcome Section - Small and minimal */}
             <div className="mt-4 sm:mt-6">
               <TorInfo />
             </div>
 
-            {/* TOR Submissions List */}
             <SubmissionsList userName={userName} />
 
-            {/* Upload Button - Like Landing Page Demo */}
             <div className="mt-8 sm:mt-12 flex justify-center">
               <button
                 onClick={() => setShowUploadModal(true)}
                 className="group relative px-8 py-4 sm:px-12 sm:py-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transform hover:scale-105 transition-all duration-300"
               >
-                {/* Animated glow */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 rounded-2xl opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-300"></div>
 
-                {/* Content */}
                 <div className="relative flex items-center gap-3">
                   <Sparkles className="w-6 h-6 sm:w-7 sm:h-7 animate-pulse" />
-                  <span className="text-lg sm:text-xl md:text-2xl">Upload Transcript Images</span>
+                  <span className="text-lg sm:text-xl md:text-2xl">
+                    Upload Transcript Images
+                  </span>
                   <Upload className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
               </button>
@@ -176,26 +171,38 @@ export default function HomePage() {
         {showUploadModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto scrollbar-thin">
-              {/* Header */}
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-6 rounded-t-2xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Sparkles className="w-8 h-8 text-white" />
-                    <h2 className="text-2xl font-bold text-white">Upload Your Transcript</h2>
+                    <h2 className="text-2xl font-bold text-white">
+                      Upload Your Transcript
+                    </h2>
                   </div>
                   <button
                     onClick={() => setShowUploadModal(false)}
                     className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
                   >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </div>
-                <p className="text-white/90 mt-2">Upload images of your transcript for processing</p>
+                <p className="text-white/90 mt-2">
+                  Upload images of your transcript for processing
+                </p>
               </div>
 
-              {/* Content */}
               <div className="p-6">
                 <MultiImageUploader onContinue={handleContinue} />
               </div>
@@ -203,7 +210,6 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* Image Preview Panel */}
         <ImagePreviewPanel
           isOpen={previewModal.isOpen}
           images={uploadedImages}
@@ -213,7 +219,6 @@ export default function HomePage() {
           loading={loading}
         />
 
-        {/* Image Editor */}
         <ImageEditorWrapper
           image={editingImage}
           isOpen={editorModal.isOpen}
@@ -221,7 +226,6 @@ export default function HomePage() {
           onSave={handleSaveEdit}
         />
 
-        {/* OCR Results */}
         <ExtractedPanel
           data={ocrResults}
           accountId={userName}
@@ -229,52 +233,63 @@ export default function HomePage() {
           onClose={handleCloseResults}
         />
 
-        {/* Profile Panel */}
         <ProfilePanel
           userId={userName}
           isOpen={profileModal.isOpen}
           onClose={profileModal.close}
         />
 
-        {/* Processing Modal */}
         {showProcessingModal && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div className="relative py-16 px-6 max-w-md w-full">
-              {/* Animated background */}
               <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 opacity-90 rounded-2xl"></div>
 
-              {/* Content */}
               <div className="relative">
-                {/* Animated loader card */}
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl border border-blue-200 p-8">
-                  {/* Pulsing icon */}
                   <div className="flex justify-center mb-6">
                     <div className="relative">
                       <div className="w-24 h-24 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center animate-pulse">
-                        <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          className="w-12 h-12 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
                       </div>
-                      {/* Spinning ring */}
+
                       <div className="absolute inset-0 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                     </div>
                   </div>
 
-                  {/* Text */}
                   <div className="text-center">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Processing OCR...</h3>
-                    <p className="text-gray-600 mb-6">Extracting text from your images</p>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Processing OCR...
+                    </h3>
+                    <p className="text-gray-600 mb-6">
+                      Extracting text from your images
+                    </p>
 
-                    {/* Progress dots */}
                     <div className="flex justify-center gap-2">
                       <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"></div>
-                      <div className="w-3 h-3 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      <div
+                        className="w-3 h-3 bg-indigo-600 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.1s' }}
+                      ></div>
+                      <div
+                        className="w-3 h-3 bg-purple-600 rounded-full animate-bounce"
+                        style={{ animationDelay: '0.2s' }}
+                      ></div>
                     </div>
                   </div>
                 </div>
 
-                {/* Info text */}
                 <p className="text-center text-sm text-gray-600 mt-6 font-medium">
                   Please wait... This may take a few moments
                 </p>

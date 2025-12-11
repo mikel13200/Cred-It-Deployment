@@ -33,7 +33,7 @@ export default function DocumentPage() {
   // Modals
   const noteModal = useModal();
   const editModal = useModal();
-  const statusModal = useModal();
+  // const statusModal = useModal(); // Removed
   const finalizeModal = useModal();
 
   // Edit/Note state
@@ -45,7 +45,7 @@ export default function DocumentPage() {
     units: '',
     description: '',
   });
-  const [selectedStatus, setSelectedStatus] = useState(null);
+  // const [selectedStatus, setSelectedStatus] = useState(null); // Removed
 
   const { showSuccess, showError } = useNotification();
 
@@ -61,15 +61,26 @@ export default function DocumentPage() {
       // Extract data from API responses
       console.log('📦 Raw API responses:', { profileData, citTorData, applicantTorData });
 
-      const profiles = Array.isArray(profileData) ? profileData : (profileData?.data || []);
+      // Extract data from API responses
+      console.log('📦 Raw API responses:', { profileData, citTorData, applicantTorData });
+
+      let profileObj = null;
+      if (Array.isArray(profileData)) {
+        profileObj = profileData.length > 0 ? profileData[0] : null;
+      } else if (profileData && typeof profileData === 'object') {
+        if (Array.isArray(profileData.data)) {
+          profileObj = profileData.data.length > 0 ? profileData.data[0] : null;
+        } else if (profileData.user_id || profileData.name) {
+          profileObj = profileData;
+        }
+      }
+
       const citTorList = Array.isArray(citTorData) ? citTorData : (citTorData?.data || []);
       const applicantTorList = Array.isArray(applicantTorData) ? applicantTorData : (applicantTorData?.data || []);
 
-      console.log('✅ Extracted arrays:', { profiles, citTorList, applicantTorList });
+      console.log('✅ Extracted arrays:', { profileObj, citTorList, applicantTorList });
 
-      if (profiles.length > 0) {
-        setProfile(profiles[0]);
-      }
+      setProfile(profileObj);
       setCitTor(citTorList);
       setApplicantTor(applicantTorList);
     } catch (error) {
@@ -146,20 +157,19 @@ export default function DocumentPage() {
     }
   };
 
-  // Save Status
+  // Save Status - Automatically sets to Pending
   const handleSaveStatus = async () => {
-    if (!selectedStatus) return;
-
     setProcessing(true);
     try {
-      await requestApi.updateRequestStatus(id, selectedStatus);
-      showSuccess(`Status updated to "${selectedStatus}" successfully.`);
+      // Default to 'Pending' automatically
+      const status = 'Pending';
+      await requestApi.updateRequestStatus(id, status);
+      showSuccess(`Status updated to "${status}" successfully.`);
       setTimeout(() => navigate('/DepartmentHome'), 1000);
     } catch (error) {
       showError(error.message || 'Failed to update status');
     } finally {
       setProcessing(false);
-      statusModal.close();
     }
   };
 
@@ -398,7 +408,7 @@ export default function DocumentPage() {
             </div>
 
             <div className="flex justify-end gap-3 mt-4">
-              <Button onClick={statusModal.open}>Save</Button>
+              <Button onClick={handleSaveStatus}>Save</Button>
               <Button variant="success" onClick={finalizeModal.open}>
                 Finalize
               </Button>
@@ -558,7 +568,7 @@ export default function DocumentPage() {
           </div>
 
           <div className="flex justify-end gap-3 mt-4">
-            <Button onClick={statusModal.open}>Save</Button>
+            <Button onClick={handleSaveStatus}>Save</Button>
             <Button variant="success" onClick={finalizeModal.open}>
               Finalize
             </Button>
@@ -624,31 +634,7 @@ export default function DocumentPage() {
         </ModalFooter>
       </Modal>
 
-      {/* Status Selection Modal */}
-      <Modal
-        isOpen={statusModal.isOpen}
-        onClose={statusModal.close}
-        title="Select Status"
-        size="sm"
-      >
-        <ModalContent>
-          <p className="mb-4 text-gray-700">Choose a status for this request:</p>
-          <div className="flex justify-around">
-            {['Pending', 'Accepted', 'Denied'].map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setSelectedStatus(status);
-                  handleSaveStatus();
-                }}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        </ModalContent>
-      </Modal>
+      {/* Status Selection Modal - REMOVED */}
 
       {/* Finalize Confirmation */}
       <ConfirmDialog

@@ -1,7 +1,13 @@
+// frontend/src/api/tor.api.js
 import { apiClient } from './client';
 import { API_ENDPOINTS } from './config';
+import { extractData, extractArray } from './helpers';
 
 export const torApi = {
+  /**
+   * Upload OCR images for processing
+   * Returns: { student_name, school_name, ocr_results: [...], school_tor: [...] }
+   */
   uploadOcr: async (images, accountId) => {
     const formData = new FormData();
     images.forEach((img) => {
@@ -9,10 +15,13 @@ export const torApi = {
     });
     formData.append('account_id', accountId);
 
-    const { data } = await apiClient.postFormData(API_ENDPOINTS.OCR, formData);
-    return data;
+    const response = await apiClient.postFormData(API_ENDPOINTS.OCR, formData);
+    return extractData(response.data);
   },
 
+  /**
+   * Upload demo OCR (no account required)
+   */
   uploadDemoOcr: async (images) => {
     const formData = new FormData();
     images.forEach((img) => {
@@ -21,73 +30,105 @@ export const torApi = {
       }
     });
 
-    const { data } = await apiClient.postFormData(API_ENDPOINTS.DEMO_OCR, formData);
-    return data;
+    const response = await apiClient.postFormData(API_ENDPOINTS.DEMO_OCR, formData);
+    return extractData(response.data);
   },
 
+  /**
+   * Delete OCR entries for account
+   * Returns: { tor_deleted: number, compare_deleted: number }
+   */
   deleteOcr: async (accountId) => {
-    const { data } = await apiClient.delete(API_ENDPOINTS.OCR_DELETE, {
+    const response = await apiClient.delete(API_ENDPOINTS.OCR_DELETE, {
       account_id: accountId,
     });
-    return data;
+    return extractData(response.data);
   },
 
+  /**
+   * Copy TOR entries to CompareResultTOR
+   * Returns array of copied entries or { count: 0 }
+   */
   copyTor: async (accountId) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.COPY_TOR, {
+    const response = await apiClient.post(API_ENDPOINTS.COPY_TOR, {
       account_id: accountId,
     });
-    return data;
+    return response; // Return full response for count checking
   },
 
+  /**
+   * Update TOR results with passed/failed subjects
+   */
   updateTorResults: async (accountId, failedSubjects, passedSubjects) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.UPDATE_TOR_RESULTS, {
+    const response = await apiClient.post(API_ENDPOINTS.UPDATE_TOR_RESULTS, {
       account_id: accountId,
       failed_subjects: failedSubjects,
       passed_subjects: passedSubjects,
     });
-    return data;
+    return extractData(response.data);
   },
 
+  /**
+   * Sync completed TOR processing
+   * Returns array of comparison results
+   */
   syncCompleted: async (accountId) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.SYNC_COMPLETED, {
+    const response = await apiClient.post(API_ENDPOINTS.SYNC_COMPLETED, {
       account_id: accountId,
     });
-    return data;
+    return extractData(response.data);
   },
 
+  /**
+   * Get comparison results between school TOR and applicant TOR
+   * Returns array of comparison entries
+   */
   getCompareResultTor: async (accountId) => {
-    const { data } = await apiClient.get(API_ENDPOINTS.COMPARE_RESULT_TOR, {
+    const response = await apiClient.get(API_ENDPOINTS.COMPARE_RESULT_TOR, {
       account_id: accountId,
     });
-    return data;
+    return extractArray(response.data);
   },
 
+  /**
+   * Get CIT TOR content (school's curriculum)
+   * Returns array of CIT TOR entries
+   */
   getCitTorContent: async () => {
-    const { data } = await apiClient.get(API_ENDPOINTS.CIT_TOR_CONTENT);
-    return data;
+    const response = await apiClient.get(API_ENDPOINTS.CIT_TOR_CONTENT);
+    return extractArray(response.data);
   },
 
+  /**
+   * Update CIT TOR entry
+   */
   updateCitTorEntry: async (entryData) => {
-    const { data } = await apiClient.post(
+    const response = await apiClient.post(
       API_ENDPOINTS.UPDATE_CIT_TOR_ENTRY,
       entryData
     );
-    return data;
+    return extractData(response.data);
   },
 
+  /**
+   * Update credit evaluation for subject
+   */
   updateCreditEvaluation: async (id, creditEvaluation) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.UPDATE_CREDIT_EVALUATION, {
+    const response = await apiClient.post(API_ENDPOINTS.UPDATE_CREDIT_EVALUATION, {
       id,
       credit_evaluation: creditEvaluation,
     });
-    return data;
+    return extractData(response.data);
   },
 
+  /**
+   * Update notes for subject
+   */
   updateNote: async (id, notes) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.UPDATE_NOTE, {
+    const response = await apiClient.post(API_ENDPOINTS.UPDATE_NOTE, {
       id,
       notes,
     });
-    return data;
+    return extractData(response.data);
   },
 };

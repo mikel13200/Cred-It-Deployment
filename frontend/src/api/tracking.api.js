@@ -1,32 +1,49 @@
 import { apiClient } from './client';
 import { API_ENDPOINTS } from './config';
+import { extractData, extractArray } from './helpers';
 
 export const trackingApi = {
+  /**
+   * Check if user exists in RequestTOR
+   * Returns: { exists: boolean, data: {...} } or array of requests
+   */
   getUserProgress: async (accountId) => {
-    const { data } = await apiClient.get(API_ENDPOINTS.TRACK_USER_PROGRESS, {
-      accountID: accountId,
+    const response = await apiClient.get(API_ENDPOINTS.TRACK_USER_PROGRESS, {
+      accountID: accountId, // Note: endpoint uses accountID
     });
-    return data.data || data; // Extract nested data
+    return extractData(response.data);
   },
 
+  /**
+   * Check if user exists in PendingRequest
+   * Returns: { exists: boolean, data: {...} } or array of pending requests
+   */
   getPendingProgress: async (accountId) => {
-    const { data } = await apiClient.get(API_ENDPOINTS.PENDING_TRACK_PROGRESS, {
+    const response = await apiClient.get(API_ENDPOINTS.PENDING_TRACK_PROGRESS, {
       applicant_id: accountId,
     });
-    return data.data || data; // Extract nested data
+    return extractData(response.data);
   },
 
+  /**
+   * Check if user exists in FinalDocuments
+   * Returns: { exists: boolean, data: {...} } or array of final documents
+   */
   getFinalProgress: async (accountId) => {
-    const { data } = await apiClient.get(API_ENDPOINTS.FINAL_TRACK_PROGRESS, {
+    const response = await apiClient.get(API_ENDPOINTS.FINAL_TRACK_PROGRESS, {
       accountID: accountId,
     });
-    return data.data || data; // Extract nested data
+    return extractData(response.data);
   },
 
+  /**
+   * Get tracker accreditation details
+   * Returns array of accreditation entries
+   */
   getTrackerAccreditation: async (accountId) => {
-    const { data } = await apiClient.get(API_ENDPOINTS.TRACKER_ACCREDITATION, {
+    const response = await apiClient.get(API_ENDPOINTS.TRACKER_ACCREDITATION, {
       account_id: accountId,
     });
-    return data.data || data; // Extract nested data
+    return extractArray(response.data);
   },
 };

@@ -301,6 +301,7 @@ class CurriculumService:
         
         cit_contents = CitTorContent.objects.filter(is_active=True)
         result_data = []
+        updated_entries = []
         
         for tor in tor_entries:
             best_match = None
@@ -343,7 +344,8 @@ class CurriculumService:
                 )
                 tor.credit_evaluation = CompareResultTOR.CreditEvaluation.INVESTIGATE
             
-            tor.save(update_fields=['summary', 'credit_evaluation', 'updated_at'])
+            # Add to bulk update list instead of saving individually
+            updated_entries.append(tor)
             
             result_data.append({
                 "subject_code": tor.subject_code,
@@ -356,6 +358,13 @@ class CurriculumService:
                 "match_accuracy": int(best_accuracy) if best_match else 0,
                 "matched_subject": best_match.subject_code if best_match else None
             })
+        
+        # Bulk update all entries at once (preserves data)
+        CompareResultTOR.objects.bulk_update(
+            updated_entries,
+            ['summary', 'credit_evaluation', 'updated_at'],
+            batch_size=100
+        )
         
         logger.info(
             f"Synced {len(result_data)} entries with curriculum matching "
@@ -417,28 +426,24 @@ class CurriculumService:
         passed_subjects: List[Dict[str, str]]
     ) -> Dict[str, int]:
         """
-        Update TOR results by marking failed subjects as DENIED and updating passed ones.
+        Update TOR results by deleting failed subjects and updating passed ones.
         
         Args:
             account_id: Student account ID
-            failed_subjects: List of subject codes that failed
+            failed_subjects: List of subject codes to delete
             passed_subjects: List of dicts with subject_code and remarks
             
         Returns:
-            Dictionary with counts of failed and updated entries
+            Dictionary with counts of deleted and updated entries
         """
         if not account_id:
             raise ValidationException("Account ID is required")
         
-        # Mark failed subjects as DENIED instead of deleting them
-        failed_count = CompareResultTOR.objects.filter(
+        # Delete failed subjects
+        deleted_count, _ = CompareResultTOR.objects.filter(
             account_id=account_id,
             subject_code__in=failed_subjects
-        ).update(
-            remarks="FAILED",
-            credit_evaluation=CompareResultTOR.CreditEvaluation.DENIED,
-            updated_at=models.F('updated_at')
-        )
+        ).delete()
         
         # Update passed subjects
         updated_count = 0
@@ -454,11 +459,11 @@ class CurriculumService:
         
         logger.info(
             f"Updated TOR results for {account_id}: "
-            f"{failed_count} marked as failed, {updated_count} updated"
+            f"{deleted_count} deleted, {updated_count} updated"
         )
         
         return {
-            "failed": failed_count,
+            "deleted": deleted_count,
             "updated": updated_count
         }
     

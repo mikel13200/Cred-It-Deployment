@@ -19,11 +19,11 @@ export const requestApi = {
     return data;
   },
 
-  acceptRequest: async (applicantId) => {
-    const { data } = await apiClient.post(API_ENDPOINTS.ACCEPT_REQUEST, {
-      account_id: applicantId,
-    });
-    return data;
+  acceptRequest: async (accountId) => {
+  const response = await apiClient.post(API_ENDPOINTS.ACCEPT_REQUEST, {
+    account_id: accountId, // Field name changed
+  });
+  return response; // Return full response object
   },
 
   denyRequest: async (applicantId) => {

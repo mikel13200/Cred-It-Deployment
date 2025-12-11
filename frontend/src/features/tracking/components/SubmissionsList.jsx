@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Circle, Clock, ChevronRight } from 'lucide-react';
 import { useAllSubmissions } from '../hooks/useAllSubmissions';
 import { Loader } from '../../../components/common';
 import EmptySubmissionState from './EmptySubmissionState';
 
 export default function SubmissionsList({ userName }) {
+    const navigate = useNavigate();
     const { submissions, loading } = useAllSubmissions(userName);
     const [expandedId, setExpandedId] = useState(null);
 
@@ -199,6 +201,21 @@ export default function SubmissionsList({ userName }) {
                                                 <p className="text-gray-900">{formatDate(submission.updatedAt)}</p>
                                             </div>
                                         </div>
+
+                                        {/* Show View TOR Logic only if Finalized */}
+                                        {(submission.status === 'Finalized' || submission.progress === 3) && (
+                                            <div className="mt-4 flex justify-end">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // prevent collapsing the card
+                                                        navigate(`/student/finalDocument/${userName}`);
+                                                    }}
+                                                    className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+                                                >
+                                                    View Final TOR
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

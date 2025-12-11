@@ -7,10 +7,10 @@ export const authApi = {
    * Login user and receive JWT tokens
    * Expected response: { access, refresh, user: { id, username, role } }
    */
-  login: async (accountID, accountPass) => {
+   login: async (accountID, accountPass) => {
     const { data } = await apiClient.post(API_ENDPOINTS.LOGIN, {
-      AccountID: accountID,
-      AccountPass: accountPass,
+      account_id: accountID,
+      account_pass: accountPass,
     });
     
     // Handle JWT token response

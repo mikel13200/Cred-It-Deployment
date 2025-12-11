@@ -1,9 +1,14 @@
-import { useState, useEffect } from 'react';
+// frontend/src/features/tracking/hooks/useTracking.js
+/**
+ * Tracking hook - Updated for new backend
+ */
+import { useState, useEffect, useNotification } from 'react';
 import { trackingApi } from '../../../api';
 
 export function useTracking(userName) {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
+  const { showError } = useNotification();
 
   useEffect(() => {
     if (!userName) return;
@@ -11,40 +16,26 @@ export function useTracking(userName) {
     const fetchProgress = async () => {
       setLoading(true);
       try {
-        // Helper function to safely fetch and handle 404s
-        const safeFetch = async (fetchFn) => {
-          try {
-            const result = await fetchFn();
-            console.log('📡 API Response:', result);
-            return result.exists || false;
-          } catch (error) {
-            // 404 means no submission exists - this is OK
-            if (error.message?.includes('404')) {
-              return false;
-            }
-            // Other errors should be logged but not break the flow
-            console.warn('Error checking progress:', error);
-            return false;
-          }
-        };
-
         // Check all three stages
-        const [inRequest, inPending, inFinal] = await Promise.all([
-          safeFetch(() => trackingApi.getUserProgress(userName)),
-          safeFetch(() => trackingApi.getPendingProgress(userName)),
-          safeFetch(() => trackingApi.getFinalProgress(userName)),
+        // Backend returns: { success: true, data: { exists: true/false } }
+        const [requestRes, pendingRes, finalRes] = await Promise.all([
+          trackingApi.getUserProgress(userName),
+          trackingApi.getPendingProgress(userName),
+          trackingApi.getFinalProgress(userName),
         ]);
 
-        console.log('🔍 Progress check:', { inRequest, inPending, inFinal, userName });
+        const inRequest = requestRes.exists;
+        const inPending = pendingRes.exists;
+        const inFinal = finalRes.exists;
 
-        // Set progress value
+        // Set progress value (1-3)
         if (inFinal) setProgress(3);
         else if (inPending) setProgress(2);
         else if (inRequest) setProgress(1);
         else setProgress(0);
       } catch (err) {
         console.error('Error fetching progress:', err);
-        setProgress(0);
+        showError('Failed to fetch progress');
       } finally {
         setLoading(false);
       }
