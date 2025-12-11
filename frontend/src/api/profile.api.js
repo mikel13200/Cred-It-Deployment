@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 import { API_ENDPOINTS } from './config';
-import { extractData, extractArray } from './helpers';
+import { extractData } from './helpers';
 
 export const profileApi = {
   /**

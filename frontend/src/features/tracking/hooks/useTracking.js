@@ -43,7 +43,7 @@ export function useTracking(userName) {
     };
 
     fetchProgress();
-  }, [userName]);
+  }, [userName, showError]);
 
   return { progress, loading };
 }
